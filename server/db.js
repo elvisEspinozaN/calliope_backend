@@ -1,5 +1,9 @@
 require("dotenv").config();
 const pg = require("pg");
+const uuid = require("uuid");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const JWT_SECRET = process.env.JWT_SECRET || "secret-key";
 
 const client = new pg.Client(
   process.env.DATABASE_URL || "postgres://localhost/calliope_backend_db"
@@ -18,7 +22,7 @@ async function createTables() {
       is_admin BOOLEAN DEFAULT FALSE,
       name VARCHAR(255) NOT NULL,
       email_address VARCHAR(255) NOT NULL,
-      phone VARCHAR(20),
+      phone VARCHAR(20) NOT NULL,
       shipping_address VARCHAR(255) NOT NULL,
       mailing_address VARCHAR(255) NOT NULL,
       created_at TIMESTAMP DEFAULT NOW()
@@ -44,7 +48,62 @@ async function createTables() {
   `);
 }
 
+// user methods
+async function createUser({
+  username,
+  password,
+  name,
+  email_address,
+  phone,
+  shipping_address,
+  mailing_address,
+}) {
+  const hashed_password = await bcrypt.hash(password, 10);
+  const {
+    rows: [user],
+  } = await client.query(
+    `
+    INSERT INTO users (id, username, password, name, email_address, phone, shipping_address, mailing_address)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    RETURNING id, username, name, email_address, phone, is_admin
+    `,
+    [
+      uuid.v4(),
+      username,
+      hashed_password,
+      name,
+      email_address,
+      phone,
+      shipping_address,
+      mailing_address,
+    ]
+  );
+  return user;
+}
+
+async function fetchUsers() {
+  const { rows } = await client.query(
+    `SELECT id, username, name, email_address, phone, mailing_address FROM users`
+  );
+  return rows;
+}
+
+async function findUserByToken(token) {
+  const { id } = jwt.verify(token, JWT_SECRET);
+  const {
+    rows: [user],
+  } = await client.query(
+    `
+    SELECT id, username, name, is_admin from user WHERE id=$1
+    `,
+    [id]
+  );
+  return user;
+}
+
 module.exports = {
   client,
   createTables,
+  createUser,
+  fetchUsers,
 };
