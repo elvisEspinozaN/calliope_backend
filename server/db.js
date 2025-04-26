@@ -88,17 +88,27 @@ async function fetchUsers() {
   return rows;
 }
 
-async function findUserByToken(token) {
-  const { id } = jwt.verify(token, JWT_SECRET);
+// products method
+async function createProduct({ name, description, price, image_url, stock }) {
   const {
-    rows: [user],
+    rows: [product],
   } = await client.query(
     `
-    SELECT id, username, name, is_admin from user WHERE id=$1
+    INSERT INTO products (id, name, description, price, image_url, stock)
+    VALUES ($1, $2, $3, $4, $5, $6)
+    RETURNING *
     `,
-    [id]
+    [uuid.v4(), name, description, price, image_url, stock]
   );
-  return user;
+
+  return product;
+}
+
+async function fetchProducts() {
+  const { rows } = await client.query(`
+    SELECT id, name, description, price, image_url, stock FROM products
+  `);
+  return rows;
 }
 
 module.exports = {
@@ -106,4 +116,6 @@ module.exports = {
   createTables,
   createUser,
   fetchUsers,
+  createProduct,
+  fetchProducts,
 };

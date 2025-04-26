@@ -1,10 +1,18 @@
-const { client, createTables, createUser, fetchUsers } = require("./db");
+const {
+  client,
+  createTables,
+  createUser,
+  fetchUsers,
+  createProduct,
+  fetchProducts,
+} = require("./db");
 const { faker } = require("@faker-js/faker");
 
 async function seed() {
   await client.connect();
   await createTables();
   console.log("- Tables created");
+
   await seededUsers();
   await createUser({
     username: "admin",
@@ -19,6 +27,9 @@ async function seed() {
   console.log("- Users seeded");
   console.log(await fetchUsers());
 
+  await seedProducts();
+  console.log(await fetchProducts());
+
   await client.end();
 }
 
@@ -32,6 +43,18 @@ async function seededUsers() {
       phone: faker.string.numeric(10),
       shipping_address: faker.location.streetAddress(),
       mailing_address: faker.location.streetAddress(),
+    });
+  }
+}
+
+async function seedProducts() {
+  for (let i = 0; i < 25; i++) {
+    await createProduct({
+      name: faker.commerce.productName(),
+      description: faker.commerce.productDescription(),
+      price: faker.commerce.price({ min: 1, max: 250 }),
+      image_url: faker.image.url(),
+      stock: faker.number.int({ min: 1, max: 20 }),
     });
   }
 }
