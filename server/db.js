@@ -111,6 +111,35 @@ async function fetchProducts() {
   return rows;
 }
 
+// auth methods
+async function authenticate(username, password) {
+  const {
+    rows: [user],
+  } = await client.query(
+    `
+    SELECT * FROM users WHERE username = $1
+    `,
+    [username]
+  );
+
+  if (user && (await bcrypt.compare(password, user.password))) {
+    return user;
+  }
+
+  return null;
+}
+
+async function findUserByToken(token) {
+  const { id } = jwt.verify(token, JWT_SECRET);
+  const {
+    rows: [user],
+  } = await client.query(
+    `SELECT id, username, name, is_admin FROM users WHERE id = $1`,
+    [id]
+  );
+  return user;
+}
+
 module.exports = {
   client,
   createTables,
@@ -118,4 +147,6 @@ module.exports = {
   fetchUsers,
   createProduct,
   fetchProducts,
+  authenticate,
+  findUserByToken,
 };
