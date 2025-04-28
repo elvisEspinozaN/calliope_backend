@@ -111,6 +111,20 @@ async function fetchProducts() {
   return rows;
 }
 
+async function fetchProductById(productId) {
+  const {
+    rows: [product],
+  } = await client.query(
+    `
+    SELECT id, name, description, price, image_url, stock 
+    FROM products
+    WHERE id = $1
+  `,
+    [productId]
+  );
+  return product;
+}
+
 // auth methods
 async function authenticate(username, password) {
   const {
@@ -204,4 +218,5 @@ module.exports = {
   addToCart,
   updateCartItem,
   removeFromCart,
+  fetchProductById,
 };
