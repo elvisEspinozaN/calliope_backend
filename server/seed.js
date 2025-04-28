@@ -5,15 +5,18 @@ const {
   fetchUsers,
   createProduct,
   fetchProducts,
+  addToCart,
+  updateCartItem,
+  removeFromCart,
+  getCart,
 } = require("./db");
 const { faker } = require("@faker-js/faker");
 
 async function seed() {
   await client.connect();
   await createTables();
-  console.log("- Tables created");
+  console.log("\n- Tables created");
 
-  await seededUsers();
   await createUser({
     username: "admin",
     password: "test123",
@@ -24,11 +27,30 @@ async function seed() {
     shipping_address: "123 Test Street",
     mailing_address: "123 Test Street",
   });
-  console.log("- Users seeded");
-  console.log(await fetchUsers());
+  await seededUsers();
+  console.log("\n- Users seeded: ");
+  const users = await fetchUsers();
+  console.table(users.slice(0, 3));
 
   await seedProducts();
-  console.log(await fetchProducts());
+  console.log("\n- Products seeded: ");
+  const products = await fetchProducts();
+  console.table(products.slice(0, 3));
+
+  const userTest = users[0];
+  const productTest = products[0];
+  const cartItem = await addToCart(userTest.id, productTest.id, 5);
+  console.log("\n- Cart item added: ");
+  console.table(cartItem);
+
+  const updatedCartItem = await updateCartItem(cartItem.id, 2);
+  console.log("\n- Cart item updated: ");
+  console.table(updatedCartItem);
+
+  await removeFromCart(cartItem.id);
+  const cart = await getCart(userTest.id);
+  console.log("\n- Cart item removed: ");
+  console.table(cart);
 
   await client.end();
 }
@@ -48,7 +70,7 @@ async function seededUsers() {
 }
 
 async function seedProducts() {
-  for (let i = 0; i < 25; i++) {
+  for (let i = 0; i < 50; i++) {
     await createProduct({
       name: faker.commerce.productName(),
       description: faker.commerce.productDescription(),

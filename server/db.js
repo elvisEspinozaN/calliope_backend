@@ -140,6 +140,57 @@ async function findUserByToken(token) {
   return user;
 }
 
+// cart methods
+async function getCart(userId) {
+  const { rows } = await client.query(
+    `
+    SELECT user_products.id, products.*, user_products.quantity
+    FROM user_products
+    JOIN products ON products.id = user_products.product_id
+    WHERE user_products.user_id = $1
+    `,
+    [userId]
+  );
+
+  return rows;
+}
+
+async function addToCart(userId, productId, quantity = 1) {
+  const {
+    rows: [item],
+  } = await client.query(
+    `
+    INSERT INTO user_products (id, user_id, product_id, quantity)
+    VALUES ($1, $2, $3, $4)
+    ON CONFLICT (user_id, product_id) DO UPDATE 
+    SET quantity = user_products.quantity + $4
+    RETURNING *
+    `,
+    [uuid.v4(), userId, productId, quantity]
+  );
+
+  return item;
+}
+
+async function updateCartItem(cartItemId, quantity) {
+  const {
+    rows: [item],
+  } = await client.query(
+    `
+    UPDATE user_products SET quantity = $2
+    WHERE id = $1 
+    RETURNING *
+    `,
+    [cartItemId, quantity]
+  );
+
+  return item;
+}
+
+async function removeFromCart(cartItemId) {
+  await client.query(`DELETE FROM user_products WHERE id = $1`, [cartItemId]);
+}
+
 module.exports = {
   client,
   createTables,
@@ -149,4 +200,8 @@ module.exports = {
   fetchProducts,
   authenticate,
   findUserByToken,
+  getCart,
+  addToCart,
+  updateCartItem,
+  removeFromCart,
 };
