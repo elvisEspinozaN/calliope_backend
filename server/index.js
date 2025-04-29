@@ -92,3 +92,5 @@ app.post("/api/auth/login", async (req, res, next) => {
     next(err);
   }
 });
+
+// user routes

@@ -50,6 +50,7 @@ async function createTables() {
 async function createUser({
   username,
   password,
+  is_admin = false,
   name,
   email_address,
   phone,
@@ -61,14 +62,15 @@ async function createUser({
     rows: [user],
   } = await client.query(
     `
-    INSERT INTO users (id, username, password, name, email_address, phone, shipping_address, mailing_address)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    INSERT INTO users (id, username, password, is_admin, name, email_address, phone, shipping_address, mailing_address)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
     RETURNING id, username, name, email_address, phone, is_admin
     `,
     [
       uuid.v4(),
       username,
       hashed_password,
+      is_admin,
       name,
       email_address,
       phone,
@@ -87,7 +89,13 @@ async function fetchUsers() {
 }
 
 // products method
-async function createProduct({ name, description, price, image_url, stock }) {
+async function createProduct({
+  name,
+  description,
+  price,
+  image_url,
+  stock = 0,
+}) {
   const {
     rows: [product],
   } = await client.query(
@@ -142,28 +150,33 @@ async function authenticate(username, password) {
 }
 
 async function findUserByToken(token) {
-  const { id } = jwt.verify(token, JWT_SECRET);
-  const {
-    rows: [user],
-  } = await client.query(
-    `SELECT id, username, name, is_admin FROM users WHERE id = $1`,
-    [id]
-  );
-  return user;
+  try {
+    const { id } = jwt.verify(token, JWT_SECRET);
+    const {
+      rows: [user],
+    } = await client.query(
+      `SELECT id, username, name, is_admin FROM users WHERE id = $1`,
+      [id]
+    );
+    return user;
+  } catch (error) {
+    return null;
+  }
 }
 
 // cart methods
 async function getCart(userId) {
   const { rows } = await client.query(
     `
-    SELECT user_products.id, products.*, user_products.quantity
+    SELECT 
+      user_products.id AS cart_item_id, 
+      products.*, user_products.quantity
     FROM user_products
     JOIN products ON products.id = user_products.product_id
     WHERE user_products.user_id = $1
     `,
     [userId]
   );
-
   return rows;
 }
 

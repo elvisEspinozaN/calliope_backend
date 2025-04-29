@@ -27,35 +27,62 @@ async function seed() {
     shipping_address: "123 Test Street",
     mailing_address: "123 Test Street",
   });
-  await seededUsers();
-  console.log("\n- Users seeded: ");
+  await seedUsers();
+  console.log("\n- Users seeded:");
   const users = await fetchUsers();
   console.table(users.slice(0, 3));
 
   await seedProducts();
-  console.log("\n- Products seeded: ");
+  console.log("\n- Products seeded:");
   const products = await fetchProducts();
   console.table(products.slice(0, 3));
 
   const userTest = users[0];
-  const productTest = products[0];
-  const cartItem = await addToCart(userTest.id, productTest.id, 5);
-  console.log("\n- Cart item added: ");
-  console.table(cartItem);
+  const product1 = products[0];
+  const product2 = products[1];
+  await addToCart(userTest.id, product1.id, 2);
+  await addToCart(userTest.id, product2.id, 3);
 
-  const updatedCartItem = await updateCartItem(cartItem.id, 2);
-  console.log("\n- Cart item updated: ");
-  console.table(updatedCartItem);
+  let cart = await getCart(userTest.id);
+  console.log("\n- Cart after adding two products:");
+  console.table(
+    cart.map((item) => ({
+      product_name: item.name,
+      price: item.price,
+      quantity: item.quantity,
+      cart_item_id: item.cart_item_id,
+    }))
+  );
 
-  await removeFromCart(cartItem.id);
-  const cart = await getCart(userTest.id);
-  console.log("\n- Cart item removed: ");
-  console.table(cart);
+  const cartItem1 = cart[0];
+  await updateCartItem(cartItem1.cart_item_id, 5);
+  cart = await getCart(userTest.id);
+  console.log("\n- Cart after updating quantity of first product:");
+  console.table(
+    cart.map((item) => ({
+      product_name: item.name,
+      price: item.price,
+      quantity: item.quantity,
+      cart_item_id: item.cart_item_id,
+    }))
+  );
+
+  await removeFromCart(cartItem1.cart_item_id);
+  cart = await getCart(userTest.id);
+  console.log("\n- Cart after removing the first product:");
+  console.table(
+    cart.map((item) => ({
+      product_name: item.name,
+      price: item.price,
+      quantity: item.quantity,
+      cart_item_id: item.cart_item_id,
+    }))
+  );
 
   await client.end();
 }
 
-async function seededUsers() {
+async function seedUsers() {
   for (let i = 0; i < 10; i++) {
     await createUser({
       username: faker.internet.username(),
