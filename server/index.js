@@ -15,6 +15,10 @@ const {
   addToCart,
   updateCartItem,
   removeFromCart,
+  fetchUsers,
+  createProduct,
+  updateProduct,
+  deleteProduct,
 } = require("./db");
 
 const app = express();
@@ -28,14 +32,14 @@ app.use(morgan("dev"));
 app.use(async (req, res, next) => {
   try {
     const authHeader = req.header("Authorization");
-    const token = authHeader?.replace("Bearer", "");
+    const token = authHeader?.replace("Bearer ", "");
 
     if (token) {
       const user = await findUserByToken(token);
 
       if (!user?.id) {
         return res.status(401).json({
-          error: "Invalid or expried token",
+          error: "Invalid or expired token",
         });
       }
       req.user = user;
@@ -45,6 +49,14 @@ app.use(async (req, res, next) => {
     next(error);
   }
 });
+
+// admin middleware
+function isAdmin(req, res, next) {
+  if (!req.user?.is_admin) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+  next();
+}
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`- server listening on port ${port}`));
@@ -65,7 +77,7 @@ app.get("/api/products/:id", async (req, res, next) => {
     if (product) {
       res.json(product);
     } else {
-      res.status(404).send({ message: "Product not found" });
+      res.status(404).send({ error: "Product not found" });
     }
   } catch (err) {
     next(err);
@@ -147,6 +159,43 @@ app.delete("/api/cart/:cartItemId", async (req, res, next) => {
   }
   try {
     await removeFromCart(req.params.cartItemId);
+    res.sendStatus(204);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// admin routes
+app.get("/api/admin/users", isAdmin, async (req, res, next) => {
+  try {
+    const users = await fetchUsers();
+    res.json(users);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post("/api/admin/products", isAdmin, async (req, res, next) => {
+  try {
+    const product = await createProduct(req.body);
+    res.json(product);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.put("/api/admin/products/:id", isAdmin, async (req, res, next) => {
+  try {
+    const updatedProduct = await updateProduct(req.params.id, req.body);
+    res.json(updatedProduct);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.delete("/api/admin/products/:id", isAdmin, async (req, res, next) => {
+  try {
+    await deleteProduct(req.params.id);
     res.sendStatus(204);
   } catch (err) {
     next(err);

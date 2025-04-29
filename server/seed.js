@@ -97,7 +97,7 @@ async function seedUsers() {
 }
 
 async function seedProducts() {
-  for (let i = 0; i < 50; i++) {
+  for (let i = 0; i < 200; i++) {
     await createProduct({
       name: faker.commerce.productName(),
       description: faker.commerce.productDescription(),

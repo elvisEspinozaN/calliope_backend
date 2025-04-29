@@ -83,7 +83,7 @@ async function createUser({
 
 async function fetchUsers() {
   const { rows } = await client.query(
-    `SELECT id, username, name, email_address, phone, mailing_address FROM users`
+    `SELECT id, username, is_admin, name, email_address, phone, mailing_address FROM users`
   );
   return rows;
 }
@@ -216,6 +216,30 @@ async function removeFromCart(cartItemId) {
   await client.query(`DELETE FROM user_products WHERE id = $1`, [cartItemId]);
 }
 
+// admin methods
+async function updateProduct(
+  productId,
+  { name, description, price, image_url, stock }
+) {
+  const {
+    rows: [product],
+  } = await client.query(
+    `
+    UPDATE PRODUCTS
+    SET name = $1, description = $2, price = $3, image_url = $4, stock = $5
+    WHERE id = $6
+    RETURNING *
+    `,
+    [name, description, price, image_url, stock, productId]
+  );
+
+  return product;
+}
+
+async function deleteProduct(productId) {
+  await client.query(`DELETE FROM products WHERE id = $1`, [productId]);
+}
+
 module.exports = {
   client,
   createTables,
@@ -230,4 +254,6 @@ module.exports = {
   updateCartItem,
   removeFromCart,
   fetchProductById,
+  updateProduct,
+  deleteProduct,
 };
