@@ -11,6 +11,10 @@ const {
   fetchProductById,
   createUser,
   authenticate,
+  getCart,
+  addToCart,
+  updateCartItem,
+  removeFromCart,
 } = require("./db");
 
 const app = express();
@@ -93,4 +97,58 @@ app.post("/api/auth/login", async (req, res, next) => {
   }
 });
 
-// user routes
+// user/cart routes
+app.get("/api/cart", async (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  try {
+    const cart = await getCart(req.user.id);
+    res.json(cart);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post("/api/cart", async (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  try {
+    const item = await addToCart(
+      req.user.id,
+      req.body.productId,
+      req.body.quantity
+    );
+    res.json(item);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.put("/api/cart/:cartItemId", async (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  try {
+    const updatedItem = await updateCartItem(
+      req.params.cartItemId,
+      req.body.quantity
+    );
+    res.json(updatedItem);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.delete("/api/cart/:cartItemId", async (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  try {
+    await removeFromCart(req.params.cartItemId);
+    res.sendStatus(204);
+  } catch (err) {
+    next(err);
+  }
+});
