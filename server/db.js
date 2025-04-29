@@ -3,11 +3,9 @@ const pg = require("pg");
 const uuid = require("uuid");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const JWT_SECRET = process.env.JWT_SECRET || "secret-key";
+const JWT_SECRET = process.env.JWT_SECRET;
 
-const client = new pg.Client(
-  process.env.DATABASE_URL || "postgres://localhost/calliope_backend_db"
-);
+const client = new pg.Client(process.env.DATABASE_URL);
 
 async function createTables() {
   await client.query(`
