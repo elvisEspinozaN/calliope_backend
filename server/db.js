@@ -3,7 +3,7 @@ const pg = require("pg");
 const uuid = require("uuid");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET || "secret";
 
 const client = new pg.Client(process.env.DATABASE_URL);
 
@@ -86,6 +86,15 @@ async function fetchUsers() {
     `SELECT id, username, is_admin, name, email_address, phone, mailing_address FROM users`
   );
   return rows;
+}
+
+async function checkoutCart(userId) {
+  await client.query(
+    `
+    DELETE FROM user_products WHERE user_id = $1
+    `,
+    [userId]
+  );
 }
 
 // products method
@@ -225,7 +234,7 @@ async function updateProduct(
     rows: [product],
   } = await client.query(
     `
-    UPDATE PRODUCTS
+    UPDATE products
     SET name = $1, description = $2, price = $3, image_url = $4, stock = $5
     WHERE id = $6
     RETURNING *
@@ -256,4 +265,5 @@ module.exports = {
   fetchProductById,
   updateProduct,
   deleteProduct,
+  checkoutCart,
 };

@@ -2,7 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const morgan = require("morgan");
 const jwt = require("jsonwebtoken");
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET || "secret";
 
 const {
   client,
@@ -19,6 +19,7 @@ const {
   createProduct,
   updateProduct,
   deleteProduct,
+  checkoutCart,
 } = require("./db");
 
 const app = express();
@@ -197,6 +198,19 @@ app.delete("/api/admin/products/:id", isAdmin, async (req, res, next) => {
   try {
     await deleteProduct(req.params.id);
     res.sendStatus(204);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// checkout routes
+app.post("api/checkout", async (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  try {
+    await checkoutCart(req.user.id);
+    res.json({ message: "Checkout successful!" });
   } catch (err) {
     next(err);
   }
